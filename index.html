@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Atividades Complementares 2.0 — PPGD UEPG</title>
+  <style>
+    :root {
+      --azul: #002855; --ouro: #c9a135; --fundo: #f7f8fb; --card: #ffffff;
+      --texto: #1a1f2e; --suave: #4a5568; --sucesso: #2e7d52;
+      --alerta: #d4941a; --erro: #c0392b; --r: 12px;
+      --shadow: 0 4px 16px rgba(0,40,85,.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--fundo); color: var(--texto);
+      line-height: 1.6; padding: 1rem;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--azul), #1a3a6a);
+      color: #fff; padding: 2rem 1.5rem;
+      border-radius: var(--r); margin-bottom: 1.5rem;
+      border-bottom: 4px solid var(--ouro);
+    }
+    header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    header p { opacity: 0.9; font-size: 0.95rem; }
+    
+    /* Cards */
+    .card {
+      background: var(--card); border-radius: var(--r);
+      padding: 1.5rem; margin-bottom: 1rem;
+      box-shadow: var(--shadow); border-left: 4px solid var(--azul);
+    }
+    .card h3 { color: var(--azul); margin-bottom: 1rem; font-size: 1.1rem; }
+    
+    /* Toggle Modo */
+    .modo-toggle {
+      background: #e8f0fb; padding: 1rem; border-radius: var(--r);
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .modo-toggle label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; }
+    .modo-toggle input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--alerta); }
+    .badge-modo { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .badge-rascunho { background: var(--alerta); color: #fff; }
+    .badge-oficial { background: var(--sucesso); color: #fff; }
+    
+    /* Dashboard */
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .categoria-card {
+      background: var(--card); border-radius: var(--r); padding: 1rem;
+      border: 2px solid #dde3ed; transition: border-color 0.2s, transform 0.2s; cursor: pointer;
+    }
+    .categoria-card:hover { border-color: var(--azul); transform: translateY(-2px); }
+    .categoria-card.obrigatorio-pendente { border-color: var(--erro); background: #fff5f5; }
+    .categoria-card.concluido { border-color: var(--sucesso); background: #f0fff4; }
+    .categoria-titulo { font-weight: 600; color: var(--azul); margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .categoria-progresso { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin: 0.5rem 0; }
+    .categoria-fill { height: 100%; background: linear-gradient(90deg, var(--azul), var(--ouro)); border-radius: 4px; transition: width 0.4s ease; }
+    .categoria-valores { font-size: 0.85rem; color: var(--suave); }
+    .categoria-valores strong { color: var(--azul); font-size: 1.1rem; }
+    
+    /* Progresso Geral */
+    .progresso { background: var(--card); border-radius: var(--r); padding: 1.25rem; margin: 1.5rem 0; text-align: center; }
+    .barra { height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; margin: 0.75rem 0; }
+    .barra-fill { height: 100%; background: linear-gradient(90deg, var(--azul), var(--ouro)); border-radius: 6px; transition: width 0.4s ease; width: 0%; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; font-size: 0.9rem; margin-top: 0.75rem; }
+    .stat strong { display: block; font-size: 1.2rem; color: var(--azul); }
+    
+    /* Atividades com Contador */
+    .atividade {
+      background: var(--card); border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 1rem; margin-bottom: 0.75rem; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .atividade:hover { border-color: var(--azul); box-shadow: 0 2px 8px rgba(0,40,85,.08); }
+    .atividade.obrigatoria { border-left: 4px solid var(--alerta); background: #fffbeb; }
+    .atividade-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .atividade-texto { flex: 1; font-size: 0.95rem; line-height: 1.4; }
+    .atividade-meta { font-size: 0.8rem; color: var(--suave); margin-top: 0.25rem; }
+    
+    /* Contador +/- */
+    .contador { display: flex; align-items: center; gap: 0.5rem; background: var(--fundo); padding: 0.25rem; border-radius: 8px; border: 2px solid #e2e8f0; }
+    .contador button {
+      width: 32px; height: 32px; border: none; background: var(--azul); color: #fff;
+      border-radius: 6px; cursor: pointer; font-size: 1.2rem; font-weight: 600;
+      transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center;
+    }
+    .contador button:hover { background: #003570; }
+    .contador button:active { transform: scale(0.95); }
+    .contador button:disabled { background: #cbd5e0; cursor: not-allowed; opacity: 0.6; }
+    .contador input { width: 50px; text-align: center; border: none; background: transparent; font-size: 1.1rem; font-weight: 600; color: var(--azul); }
+    .contador-info { font-size: 0.8rem; color: var(--suave); margin-top: 0.5rem; }
+    .contador-info.limite-atingido { color: var(--sucesso); font-weight: 600; }
+    
+    /* Barra de progresso individual */
+    .atividade-progresso { margin-top: 0.75rem; }
+    .atividade-progresso .barra { height: 6px; margin: 0.25rem 0; }
+    
+    /* Filtros */
+    .filtros { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .filtro-btn {
+      padding: 0.4rem 0.8rem; border: 1px solid var(--azul); background: #fff;
+      color: var(--azul); border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+    }
+    .filtro-btn.ativo, .filtro-btn:hover { background: var(--azul); color: #fff; }
+    
+    /* Botões */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem;
+      background: var(--azul); color: #fff; border: none; border-radius: var(--r);
+      font-weight: 600; cursor: pointer; transition: transform 0.2s, background 0.2s;
+    }
+    .btn:hover { background: #003570; transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-outline { background: transparent; border: 2px solid var(--azul); color: var(--azul); }
+    .btn-outline:hover { background: var(--azul); color: #fff; }
+    .btn-acao { margin: 0.5rem; }
+    
+    /* Alertas */
+    .alerta { padding: 0.75rem 1rem; border-radius: var(--r); font-size: 0.9rem; margin: 1rem 0; }
+    .alerta.erro { background: #fde8e8; border-left: 4px solid var(--erro); color: #7a1a1a; }
+    .alerta.sucesso { background: #e6f4ea; border-left: 4px solid var(--sucesso); color: #1a4d32; }
+    .alerta.info { background: #e8f0fb; border-left: 4px solid var(--azul); color: #002855; }
+    .alerta.aviso { background: #fff3cd; border-left: 4px solid var(--alerta); color: #7a4f00; }
+    
+    /* Modal */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    .modal.aberto { display: flex; }
+    .modal-card {
+      background: #fff; border-radius: var(--r); padding: 1.5rem;
+      max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-card h4 { color: var(--azul); margin-bottom: 1rem; }
+    .modal-card dl { margin: 0.75rem 0; }
+    .modal-card dt { font-weight: 600; color: var(--suave); font-size: 0.9rem; }
+    .modal-card dd { margin-left: 0; margin-bottom: 0.5rem; }
+    
+    /* Footer */
+    footer {
+      text-align: center; padding: 2rem 1rem; color: var(--suave);
+      font-size: 0.85rem; border-top: 1px solid #e2e8f0; margin-top: 2rem;
+    }
+    footer a { color: var(--azul); }
+    
+    /* Responsivo */
+    @media (max-width: 600px) {
+      .stats, .dashboard { grid-template-columns: 1fr; }
+      .filtros { justify-content: center; }
+      header h1 { font-size: 1.3rem; }
+      .atividade-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <h1>🎓 Calculadora de Atividades Complementares 2.0</h1>
+    <p>PPGD UEPG • Mestrado Profissional em Direito • IN 05/2024</p>
+  </header>
+
+  <!-- MODO RASCUNHO/OFICIAL -->
+  <div class="modo-toggle">
+    <label>
+      <input type="checkbox" id="modoRascunho" checked>
+      <span>Modo Rascunho</span>
+    </label>
+    <span id="badgeModo" class="badge-modo badge-rascunho">📝 Rascunho</span>
+    <p style="width:100%;font-size:0.85rem;margin-top:0.5rem;color:var(--suave);">
+      💡 No modo rascunho, os dados não são salvos permanentemente. Use para simular cenários antes de protocolar.
+    </p>
+  </div>
+
+  <!-- PERFIL DO ALUNO -->
+  <section class="card">
+    <h3>👤 Seu perfil</h3>
+    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-bottom:0.5rem;">
+      <input type="radio" name="perfil" value="bolsista" checked>
+      <span><strong>Bolsista</strong> (Estágio de Docência é obrigatório)</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+      <input type="radio" name="perfil" value="nao-bolsista">
+      <span><strong>Não-bolsista</strong> (Estágio de Docência é opcional)</span>
+    </label>
+  </section>
+
+  <!-- DASHBOARD DE CATEGORIAS -->
+  <h3 style="margin:1.5rem 0 1rem;">📊 Progresso por Categoria</h3>
+  <div class="dashboard" id="dashboardCategorias"></div>
+
+  <!-- PROGRESSO GERAL -->
+  <section class="progresso" id="progressoGeral">
+    <h3 style="margin-bottom:0.5rem;">📊 Progresso Total</h3>
+    <div class="barra"><div class="barra-fill" id="barraGeral"></div></div>
+    <div class="stats">
+      <div class="stat"><strong id="totalCreditos">0</strong>/8 créditos</div>
+      <div class="stat"><strong id="totalHoras">0</strong>/120 horas</div>
+      <div class="stat"><strong id="porcentagem">0%</strong> concluído</div>
+    </div>
+    <div id="alertaProgresso" class="alerta info" style="display:none;margin-top:1rem;"></div>
+  </section>
+
+  <!-- FILTROS POR CATEGORIA -->
+  <div class="filtros">
+    <button class="filtro-btn ativo" data-categoria="todas">Todas</button>
+    <button class="filtro-btn" data-categoria="producao">📝 Produção Científica</button>
+    <button class="filtro-btn" data-categoria="eventos">🎤 Eventos & Bancas</button>
+    <button class="filtro-btn" data-categoria="imersao">🏢 Estágio de Imersão</button>
+    <button class="filtro-btn" data-categoria="colaboracao">🤝 Colaboração</button>
+    <button class="filtro-btn" data-categoria="docencia">👨‍🏫 Estágio de Docência</button>
+  </div>
+
+  <!-- LISTA DE ATIVIDADES -->
+  <section class="card">
+    <h3>✅ Quantas vezes você realizou cada atividade?</h3>
+    <div id="listaAtividades"></div>
+    <button class="btn btn-outline" style="margin-top:1rem" onclick="abrirModalAjuda()">❓ Não encontrou sua atividade?</button>
+  </section>
+
+  <!-- BOTÕES DE AÇÃO -->
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1.5rem 0;justify-content:center;">
+    <button class="btn btn-acao" onclick="gerarRelatorio()">📄 Gerar Relatório</button>
+    <button class="btn btn-acao" onclick="gerarAnexoV()">📋 Preencher ANEXO V</button>
+    <button class="btn btn-outline btn-acao" onclick="limparTudo()">🔄 Recomeçar</button>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="alerta info">
+    <strong>ℹ️ Importante:</strong> Esta calculadora é uma ferramenta de apoio baseada na IN 05/2024. 
+    A validação final dos créditos é de responsabilidade do Colegiado do PPGD. 
+    Em caso de dúvida, consulte o texto oficial ou a Secretaria do Programa.
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p><strong>UEPG LegalTechLab</strong> • Laboratório de Tecnologia e Inovação em Direito</p>
+    <p>Base legal: Instrução Normativa nº 05/2024 (atualizada pela IN 07/2024)</p>
+    <p style="margin-top:0.5rem;">
+      <a href="#" onclick="abrirModalFonte()">📜 Ver fonte normativa</a>
+    </p>
+  </footer>
+
+</div>
+
+<!-- MODAIS -->
+<div class="modal" id="modalDetalhes"><div class="modal-card"><h4 id="modalTitulo">Detalhes da Atividade</h4><dl id="modalConteudo"></dl><button class="btn" style="margin-top:1rem" onclick="fecharModal('modalDetalhes')">Fechar</button></div></div>
+<div class="modal" id="modalAjuda"><div class="modal-card"><h4>❓ Atividade não listada?</h4><p style="margin-bottom:1rem;">Se você realizou uma atividade que não aparece na lista:</p><ol style="padding-left:1.25rem;margin-bottom:1rem;"><li>Verifique se ela se enquadra em alguma categoria similar</li><li>Consulte o Art. 7º da IN 05/2024: atividades não previstas podem ser analisadas pelo Colegiado</li><li>Entre em contato com a Secretaria do Programa para orientação</li></ol><p style="font-size:0.9rem;color:var(--suave);">📧 Contato: <a href="mailto:mestradodedireito@uepg.br">mestradodedireito@uepg.br</a></p><button class="btn" style="margin-top:1rem" onclick="fecharModal('modalAjuda')">Entendi</button></div></div>
+<div class="modal" id="modalFonte"><div class="modal-card"><h4>📜 Fonte Normativa</h4><p style="margin-bottom:1rem;">Esta calculadora baseia-se em:</p><ul style="padding-left:1.25rem;margin-bottom:1rem;"><li><strong>Instrução Normativa nº 05/2024</strong> (24/06/2024)</li><li>Atualizada pela <strong>IN nº 07/2024</strong> (15/08/2024)</li><li>Regulamento do Programa (Resolução CEPE nº 013.2022)</li><li>Art. 34: 8 créditos complementares = 120 horas</li></ul><p style="font-size:0.9rem;color:var(--suave);margin-bottom:1rem;">🔗 <a href="https://www2.uepg.br/direito/" target="_blank">Portal do PPGD UEPG</a></p><button class="btn" onclick="fecharModal('modalFonte')">Fechar</button></div></div>
+<div class="modal" id="modalAnexoV"><div class="modal-card" style="max-width:800px;"><h4>📋 Formulário de Enquadramento (ANEXO V)</h4><p style="margin-bottom:1rem;font-size:0.9rem;">Copie o conteúdo abaixo e cole no formulário ANEXO V para cada atividade:</p><div id="anexoVContent" style="background:#f7f8fb;padding:1rem;border-radius:8px;font-family:monospace;font-size:0.85rem;white-space:pre-wrap;max-height:400px;overflow-y:auto;"></div><div style="margin-top:1rem;display:flex;gap:0.5rem;"><button class="btn" onclick="copiarAnexoV()">📋 Copiar</button><button class="btn btn-outline" onclick="fecharModal('modalAnexoV')">Fechar</button></div></div></div>
+<div class="modal" id="modalSelecaoAnexoV"><div class="modal-card"><h4>📋 Escolha a atividade para o ANEXO V</h4><p style="margin-bottom:1rem;font-size:0.9rem;">Você tem múltiplas atividades registradas. Selecione uma para preencher o formulário:</p><div id="listaSelecaoAnexoV" style="max-height:300px;overflow-y:auto;"></div><button class="btn" style="margin-top:1rem" onclick="fecharModal('modalSelecaoAnexoV')">Cancelar</button></div></div>
+
+<script>
+// ===================== DADOS DAS ATIVIDADES =====================
+const atividades = [
+  { id:"1.1", nome:"Artigo em periódico (co-autoria com orientador)", horas:15, credito:1, max:4, categoria:"producao", comprovacao:"Cópia do artigo + capa + ficha catalográfica" },
+  { id:"1.2", nome:"Artigo em periódico (sem orientador)", horas:8, credito:0.5, max:2, categoria:"producao", comprovacao:"Cópia do artigo + capa + ficha catalográfica" },
+  { id:"1.3", nome:"Artigo em anais (co-autoria com orientador)", horas:8, credito:0.5, max:4, categoria:"producao", comprovacao:"Cópia do trabalho + capa + ficha dos anais" },
+  { id:"1.4", nome:"Artigo em anais", horas:4, credito:0.25, max:4, categoria:"producao", comprovacao:"Idem" },
+  { id:"1.5", nome:"Livro (co-autoria com orientador, mín. 125 págs)", horas:30, credito:2, max:1, categoria:"producao", comprovacao:"2 exemplares + cópia digitalizada" },
+  { id:"1.6", nome:"Livro (ISBN, mín. 125 págs)", horas:15, credito:1, max:2, categoria:"producao", comprovacao:"Idem" },
+  { id:"1.7", nome:"Organização de obra coletiva (co-autoria)", horas:15, credito:1, max:1, categoria:"producao", comprovacao:"Idem" },
+  { id:"1.8", nome:"Capítulo de livro (co-autoria com orientador)", horas:15, credito:1, max:2, categoria:"producao", comprovacao:"Idem" },
+  { id:"2.1", nome:"Palestrante/expositor em evento SECIJUR", horas:8, credito:0.5, max:4, categoria:"eventos", comprovacao:"Certificado do organizador" },
+  { id:"2.2", nome:"Ouvinte em banca de Mestrado/Doutorado", horas:2, credito:0.125, max:4, categoria:"eventos", comprovacao:"Declaração ANEXO VI assinada" },
+  { id:"2.3", nome:"Ouvinte em SEDREIPI", horas:2, credito:0.125, max:4, categoria:"eventos", comprovacao:"Certificado ou ata" },
+  { id:"2.4", nome:"Ouvinte em evento SECIJUR", horas:3, credito:0.2, max:5, categoria:"eventos", comprovacao:"Certificado do organizador" },
+  { id:"2.5", nome:"Membro de banca de TCC/Graduação", horas:8, credito:0.5, max:2, categoria:"eventos", comprovacao:"Ata de defesa ou declaração da IES" },
+  { id:"2.6", nome:"Avaliador no Simpósio Jurídico", horas:15, credito:1, max:2, categoria:"eventos", comprovacao:"Certificado do organizador" },
+  { id:"2.7", nome:"Coordenador de Sessão no Simpósio", horas:15, credito:1, max:2, categoria:"eventos", comprovacao:"Certificado do organizador" },
+  { id:"2.8", nome:"Grupo de pesquisa (Docente Permanente)", horas:15, credito:1, max:2, categoria:"eventos", comprovacao:"Declaração do Coordenador" },
+  { id:"2.9", nome:"Coorientação de IC (PIBIC/PROVIC)", horas:15, credito:1, max:2, categoria:"eventos", comprovacao:"Declaração do Orientador + Orientado" },
+  { id:"2.10", nome:"Envio de Lattes atualizado (até 15/02)", horas:4, credito:0.25, max:2, categoria:"eventos", comprovacao:"Confirmação da secretaria" },
+  { id:"3.0", nome:"Estágio de Imersão Prático-Institucional", horas:60, credito:4, max:1, categoria:"imersao", obrigatorio:true, comprovacao:"Relatório Final + Declaração + SEDREIPI" },
+  { id:"4.1", nome:"Representante discente no Colegiado", horas:8, credito:0.5, max:2, categoria:"colaboracao", comprovacao:"Portaria + declaração" },
+  { id:"4.4", nome:"Colaboração em gestão/comunicação", horas:4, credito:0.25, max:4, categoria:"colaboracao", comprovacao:"Declaração do Coordenador" },
+  { id:"5.0", nome:"Estágio de Docência", horas:30, credito:2, max:1, categoria:"docencia", apenasBolsista:true, obrigatorioBolsista:true, comprovacao:"Relatório assinado + Resolução CEPE 21/2016" }
+];
+
+// ===================== ESTADO =====================
+let atividadesQuantidades = {};
+let perfil = "bolsista";
+let modoRascunho = true;
+const categorias = {
+  producao: { nome: "📝 Produção Científica", maxCreditos: 4 },
+  eventos: { nome: "🎤 Eventos & Bancas", maxCreditos: 4 },
+  imersao: { nome: "🏢 Estágio de Imersão", maxCreditos: 4, obrigatorio: true },
+  colaboracao: { nome: "🤝 Colaboração", maxCreditos: 1 },
+  docencia: { nome: "👨‍🏫 Estágio de Docência", maxCreditos: 2, apenasBolsista: true }
+};
+
+// ===================== INICIALIZAÇÃO =====================
+document.addEventListener('DOMContentLoaded', () => {
+  renderizarAtividades();
+  atualizarDashboard();
+  configurarEventos();
+  carregarProgressoSalvo();
+  document.getElementById('modoRascunho').addEventListener('change', (e) => {
+    modoRascunho = e.target.checked;
+    const badge = document.getElementById('badgeModo');
+    badge.textContent = modoRascunho ? '📝 Rascunho' : '✅ Oficial';
+    badge.className = `badge-modo ${modoRascunho ? 'badge-rascunho' : 'badge-oficial'}`;
+  });
+});
+
+// ===================== RENDERIZAÇÃO =====================
+function renderizarAtividades(filtro = "todas") {
+  const container = document.getElementById('listaAtividades');
+  container.innerHTML = '';
+  atividades.filter(atv => filtro === "todas" || atv.categoria === filtro)
+    .forEach(atv => {
+      if (atv.apenasBolsista && perfil !== "bolsista") return;
+      const quantidade = atividadesQuantidades[atv.id] || 0;
+      const creditoTotal = quantidade * atv.credito;
+      const horasTotal = quantidade * atv.horas;
+      const atingiuLimite = quantidade >= atv.max;
+      const div = document.createElement('div');
+      div.className = `atividade ${atv.obrigatorio || atv.obrigatorioBolsista ? 'obrigatoria' : ''}`;
+      div.innerHTML = `
+        <div class="atividade-header">
+          <div class="atividade-texto">
+            <strong>${atv.id}</strong> - ${atv.nome}
+            ${atv.obrigatorio ? '<span style="color:var(--alerta);font-size:0.8rem"> ⚠️ Obrigatório</span>' : ''}
+            ${atv.obrigatorioBolsista && perfil === 'bolsista' ? '<span style="color:var(--alerta);font-size:0.8rem"> ⚠️ Obrigatório para bolsistas</span>' : ''}
+            <div class="atividade-meta">${atv.credito} crédito${atv.credito>1?'s':''} por atividade • ${atv.horas}h • Máx: ${atv.max}</div>
+          </div>
+          <div class="contador">
+            <button onclick="alterarQuantidade('${atv.id}', -1)" ${quantidade === 0 ? 'disabled' : ''}>−</button>
+            <input type="number" value="${quantidade}" min="0" max="${atv.max}" readonly>
+            <button onclick="alterarQuantidade('${atv.id}', 1)" ${atingiuLimite ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+        <div class="contador-info ${atingiuLimite && quantidade > 0 ? 'limite-atingido' : ''}">
+          ${quantidade === 0 ? 'Não realizado' : atingiuLimite ? `✅ Limite atingido! ${creditoTotal} créditos • ${horasTotal}h` : `${creditoTotal} créditos • ${horasTotal}h (faltam ${atv.max - quantidade})`}
+        </div>
+        ${quantidade > 0 ? `<div class="atividade-progresso"><div class="barra"><div class="barra-fill" style="width:${(quantidade/atv.max)*100}%"></div></div></div>` : ''}
+        <button type="button" class="btn-link" onclick="mostrarDetalhes('${atv.id}')" style="background:none;border:none;color:var(--azul);cursor:pointer;padding:0;font-size:0.85rem;margin-top:0.5rem">🔍 Ver detalhes e comprovação</button>
+      `;
+      container.appendChild(div);
+    });
+}
+
+function alterarQuantidade(id, delta) {
+  const atv = atividades.find(a => a.id === id);
+  if (!atv) return;
+  const atual = atividadesQuantidades[id] || 0;
+  const novo = Math.max(0, Math.min(atual + delta, atv.max));
+  if (novo === 0) delete atividadesQuantidades[id];
+  else atividadesQuantidades[id] = novo;
+  renderizarAtividades(document.querySelector('.filtro-btn.ativo').dataset.categoria);
+  atualizarDashboard();
+  atualizarProgresso();
+  salvarProgresso();
+}
+
+// ===================== DASHBOARD =====================
+function atualizarDashboard() {
+  const container = document.getElementById('dashboardCategorias');
+  container.innerHTML = '';
+  const totals = calcularTotaisPorCategoria();
+  Object.entries(categorias).forEach(([key, cat]) => {
+    if (cat.apenasBolsista && perfil !== 'bolsista') return;
+    const total = totals[key] || { creditos: 0, horas: 0 };
+    const pct = Math.min((total.creditos / cat.maxCreditos) * 100, 100);
+    const concluido = total.creditos >= cat.maxCreditos;
+    const obrigatorioPendente = cat.obrigatorio && !concluido;
+    const div = document.createElement('div');
+    div.className = `categoria-card ${obrigatorioPendente ? 'obrigatorio-pendente' : ''} ${concluido ? 'concluido' : ''}`;
+    div.innerHTML = `
+      <div class="categoria-titulo">${cat.nome}</div>
+      <div class="categoria-progresso"><div class="categoria-fill" style="width:${pct}%"></div></div>
+      <div class="categoria-valores"><strong>${total.creditos.toFixed(1)}</strong> / ${cat.maxCreditos} créditos<br>${total.horas}h</div>
+    `;
+    div.onclick = () => {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+      const btn = document.querySelector(`.filtro-btn[data-categoria="${key}"]`);
+      if (btn) btn.classList.add('ativo');
+      renderizarAtividades(key);
+      div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    container.appendChild(div);
+  });
+}
+
+function calcularTotaisPorCategoria() {
+  const totals = {};
+  Object.keys(atividadesQuantidades).forEach(id => {
+    const atv = atividades.find(a => a.id === id);
+    if (!atv) return;
+    const qtd = atividadesQuantidades[id];
+    const creditos = qtd * atv.credito;
+    const horas = qtd * atv.horas;
+    if (!totals[atv.categoria]) totals[atv.categoria] = { creditos: 0, horas: 0 };
+    totals[atv.categoria].creditos += creditos;
+    totals[atv.categoria].horas += horas;
+  });
+  return totals;
+}
+
+// ===================== EVENTOS =====================
+function configurarEventos() {
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+      e.currentTarget.classList.add('ativo');
+      renderizarAtividades(e.currentTarget.dataset.categoria);
+    });
+  });
+  document.querySelectorAll('input[name="perfil"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      perfil = e.target.value;
+      renderizarAtividades(document.querySelector('.filtro-btn.ativo').dataset.categoria);
+      atualizarDashboard();
+      atualizarProgresso();
+    });
+  });
+}
+
+// ===================== PROGRESSO =====================
+function atualizarProgresso() {
+  let totalCreditos = 0, totalHoras = 0;
+  const imersaoFeito = (atividadesQuantidades["3.0"] || 0) > 0;
+  const docenciaFeito = (atividadesQuantidades["5.0"] || 0) > 0;
+  Object.entries(atividadesQuantidades).forEach(([id, qtd]) => {
+    const atv = atividades.find(a => a.id === id);
+    if (!atv) return;
+    totalCreditos += qtd * atv.credito;
+    totalHoras += qtd * atv.horas;
+  });
+  totalCreditos = Math.min(totalCreditos, 8);
+  totalHoras = Math.min(totalHoras, 120);
+  document.getElementById('totalCreditos').textContent = totalCreditos.toFixed(1).replace('.0', '');
+  document.getElementById('totalHoras').textContent = Math.round(totalHoras);
+  const pct = Math.round((totalCreditos / 8) * 100);
+  document.getElementById('porcentagem').textContent = pct + '%';
+  document.getElementById('barraGeral').style.width = pct + '%';
+  const alerta = document.getElementById('alertaProgresso');
+  alerta.style.display = 'block';
+  if (!imersaoFeito) {
+    alerta.className = 'alerta erro';
+    alerta.innerHTML = '<strong>⚠️ Atenção:</strong> O Estágio de Imersão (Item 3.0) é <strong>obrigatório</strong> para todos os mestrandos e vale 4 créditos.';
+  } else if (perfil === "bolsista" && !docenciaFeito) {
+    alerta.className = 'alerta aviso';
+    alerta.innerHTML = '<strong>💡 Para bolsistas:</strong> O Estágio de Docência (Item 5.0) é obrigatório e vale 2 créditos.';
+  } else if (totalCreditos >= 8) {
+    alerta.className = 'alerta sucesso';
+    alerta.innerHTML = '<strong>🎉 Parabéns!</strong> Você atingiu os 8 créditos necessários. Revise as comprovações e protocole seu pedido de validação no SEI.';
+  } else {
+    const faltamCreditos = (8 - totalCreditos).toFixed(1);
+    alerta.className = 'alerta info';
+    alerta.innerHTML = `<strong>📋 Faltam ${faltamCreditos.replace('.0','')} créditos.</strong> Você pode completar com: artigos, eventos, grupos de pesquisa ou colaboração técnica.`;
+  }
+}
+
+// ===================== MODAIS =====================
+function mostrarDetalhes(id) {
+  const atv = atividades.find(a => a.id === id);
+  if (!atv) return;
+  document.getElementById('modalTitulo').textContent = `Item ${atv.id}: Detalhes`;
+  document.getElementById('modalConteudo').innerHTML = `
+    <dt>Atividade</dt><dd>${atv.nome}</dd>
+    <dt>Créditos por unidade</dt><dd>${atv.credito} crédito${atv.credito>1?'s':''}</dd>
+    <dt>Carga horária por unidade</dt><dd>${atv.horas} hora${atv.horas>1?'s':''}</dd>
+    <dt>Máximo permitido</dt><dd>${atv.max} unidade${atv.max>1?'s':''}</dd>
+    <dt>Créditos máximos</dt><dd>${(atv.max * atv.credito).toFixed(1)} créditos</dd>
+    <dt>Comprovação necessária</dt><dd>${atv.comprovacao}</dd>
+    ${atv.obrigatorio ? '<dt><strong>⚠️ Obrigatório</strong></dt><dd>Sim, para todos os mestrandos</dd>' : ''}
+    ${atv.obrigatorioBolsista ? '<dt><strong>🎓 Obrigatório para</strong></dt><dd>Bolsistas do Programa</dd>' : ''}
+  `;
+  document.getElementById('modalDetalhes').classList.add('aberto');
+}
+function abrirModalAjuda() { document.getElementById('modalAjuda').classList.add('aberto'); }
+function abrirModalFonte() { document.getElementById('modalFonte').classList.add('aberto'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('aberto'); });
+});
+
+// ===================== RELATÓRIO E ANEXO V =====================
+function gerarRelatorio() {
+  if (Object.keys(atividadesQuantidades).length === 0) { alert('⚠️ Adicione pelo menos uma atividade para gerar o relatório.'); return; }
+  const linhas = ['RELATÓRIO DE ATIVIDADES COMPLEMENTARES - PPGD UEPG', `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, `Perfil: ${perfil === 'bolsista' ? 'Bolsista' : 'Não-bolsista'}`, `Modo: ${modoRascunho ? 'RASCUNHO' : 'OFICIAL'}`, '='.repeat(60), ''];
+  let totalCred = 0, totalHrs = 0;
+  Object.entries(atividadesQuantidades).forEach(([id, qtd]) => {
+    const atv = atividades.find(a => a.id === id);
+    if (atv) {
+      const credTotal = qtd * atv.credito, hrsTotal = qtd * atv.horas;
+      linhas.push(`[${atv.id}] ${atv.nome}`, `  Quantidade: ${qtd}`, `  Créditos: ${credTotal.toFixed(1)} | Horas: ${hrsTotal}`, `  Comprovação: ${atv.comprovacao}`, '');
+      totalCred += credTotal; totalHrs += hrsTotal;
+    }
+  });
+  linhas.push('='.repeat(60), `TOTAL: ${totalCred.toFixed(1)} créditos | ${Math.round(totalHrs)} horas`, `Meta: 8 créditos (120 horas) • Concluído: ${Math.round((totalCred/8)*100)}%`, '', '⚠️ Este relatório é informativo. A validação final cabe ao Colegiado do PPGD.', '📧 Dúvidas: mestradodedireito@uepg.br');
+  navigator.clipboard.writeText(linhas.join('\n')).then(() => alert('📋 Relatório copiado para a área de transferência!')).catch(() => { const win = window.open('', '_blank'); win.document.write('<pre style="font-family:monospace;font-size:14px;white-space:pre-wrap;">' + linhas.join('\n').replace(/</g, '&lt;') + '</pre>'); win.document.close(); });
+}
+
+// 🔧 FUNÇÃO ATUALIZADA: GERAR ANEXO V COM REDIRECIONAMENTO
+function gerarAnexoV() {
+  const atividadesSelecionadas = Object.entries(atividadesQuantidades)
+    .filter(([id, qtd]) => qtd > 0)
+    .map(([id, qtd]) => { const atv = atividades.find(a => a.id === id); return atv ? { ...atv, quantidade: qtd } : null; })
+    .filter(Boolean);
+  if (atividadesSelecionadas.length === 0) { alert('⚠️ Adicione pelo menos uma atividade para gerar o ANEXO V.'); return; }
+  if (atividadesSelecionadas.length === 1) { redirecionarAnexoV(atividadesSelecionadas[0], atividadesSelecionadas[0].quantidade); return; }
+  const modal = document.getElementById('modalSelecaoAnexoV');
+  const lista = document.getElementById('listaSelecaoAnexoV');
+  lista.innerHTML = '';
+  atividadesSelecionadas.forEach(atv => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:0.5rem;cursor:pointer;transition:background 0.2s;';
+    item.onmouseenter = () => item.style.background = '#f7f8fb';
+    item.onmouseleave = () => item.style.background = '';
+    item.onclick = () => { fecharModal('modalSelecaoAnexoV'); redirecionarAnexoV(atv, atv.quantidade); };
+    item.innerHTML = `<strong style="color:var(--azul)">${atv.id}</strong> - ${atv.nome}<div style="font-size:0.85rem;color:var(--suave);margin-top:0.25rem">Quantidade: ${atv.quantidade} • ${atv.quantidade * atv.credito} créditos • ${atv.quantidade * atv.horas}h</div>`;
+    lista.appendChild(item);
+  });
+  modal.classList.add('aberto');
+}
+
+function redirecionarAnexoV(atv, quantidade) {
+  const params = new URLSearchParams({
+    item: atv.id, atividade: atv.nome, quantidade: quantidade.toString(),
+    carga: `${quantidade * atv.horas} horas = ${(quantidade * atv.credito).toFixed(1)} créditos`,
+    comprovacao: atv.comprovacao
+  });
+  window.open(`anexo_v.html?${params.toString()}`, '_blank');
+}
+
+function copiarAnexoV() {
+  const content = document.getElementById('anexoVContent').textContent;
+  navigator.clipboard.writeText(content).then(() => alert('📋 ANEXO V copiado! Cole em um documento Word e preencha os campos restantes.')).catch(() => alert('Erro ao copiar. Selecione o texto manualmente e copie.'));
+}
+
+function limparTudo() {
+  if (confirm('Tem certeza que deseja limpar todas as atividades?')) {
+    atividadesQuantidades = {};
+    renderizarAtividades(document.querySelector('.filtro-btn.ativo').dataset.categoria);
+    atualizarDashboard();
+    atualizarProgresso();
+    if (!modoRascunho) localStorage.removeItem('ppgd-atividades-compl-v2');
+  }
+}
+
+function salvarProgresso() {
+  if (modoRascunho) return;
+  localStorage.setItem('ppgd-atividades-compl-v2', JSON.stringify({ quantidades: atividadesQuantidades, perfil: perfil }));
+}
+
+function carregarProgressoSalvo() {
+  if (modoRascunho) return;
+  try {
+    const salvo = JSON.parse(localStorage.getItem('ppgd-atividades-compl-v2'));
+    if (salvo) {
+      atividadesQuantidades = salvo.quantidades || {};
+      perfil = salvo.perfil || 'bolsista';
+      document.querySelector(`input[name="perfil"][value="${perfil}"]`).checked = true;
+      renderizarAtividades(); atualizarDashboard(); atualizarProgresso();
+    }
+  } catch(e) { console.log('Não foi possível carregar progresso salvo'); }
+}
+</script>
+</body>
+</html>
